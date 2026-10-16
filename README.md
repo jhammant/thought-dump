@@ -32,6 +32,7 @@ record ─► on-device transcription ─HTTPS─► server.py (token, tailnet)
                                                ▼
                                           dump capture
                                             ├─ split:  claude -p --json-schema → tasks.json
+                                            ├─ look up: who and what each thought names (optional, Taxi)
                                             ├─ plan:   30-second countdown (change a route, skip, start now)
                                             ├─ to-dos: your list (optional adapter) or "for you" in the app
                                             ├─ drafts: tool-free Claude worker, nothing sent
@@ -50,6 +51,36 @@ Each thought gets a **route**:
 | Skip | you said so | Nothing |
 
 During the countdown you can change any route from the app.
+
+## Knows who you mean (optional)
+
+Point Thought Dump at your own records and it looks up the people and organisations each thought
+names before the countdown starts. The app shows who it matched ("Sam Patel · Acme · last met 9 Oct"),
+and drafts and research get that context, so a note to "Sam" goes to the right Sam, and reflects what
+you last discussed.
+
+It works with any [Taxi](https://taxilang.org) / [Orbital](https://orbitalhq.com) semantic layer through
+`adapters/taxi.py`. You write one TaxiQL query per kind, using your own types:
+
+```json
+{"person": "find { Person[](Name == '{name}') }",
+ "organisation": "find { Company[](CompanyName == '{name}') }"}
+```
+
+```json
+"context": {"argv": ["python3", "adapters/taxi.py", "--url", "http://localhost:9022",
+                     "--queries", "~/.thought-dump/taxi-queries.json"],
+            "workspaces": ["work"]}
+```
+
+- **Names come from your words only.** The splitter lists the names a thought mentions; each must
+  appear in what you said, and only letters, digits, spaces and `.&-` get through. The adapter swaps the
+  name into your fixed query, so a sentence in a voice note can't change what's asked.
+- **Only for the workspaces you list.** A "home" thought is never looked up in your work graph.
+- **Context is data to the workers,** never instructions, and a lookup that fails or takes more than
+  25 seconds just leaves the thought without it.
+- **Any other source** works as an adapter: a program that reads `{"kind", "name", "workspace"}` on stdin
+  and prints `{"found", "title", "summary", "text"}`.
 
 ## Safety
 

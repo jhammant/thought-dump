@@ -22,6 +22,8 @@ def split(transcript):
             "id": task_id, "title": words.split(".")[0][:100], "jon_words": words,
             "kind": kind, "outward": outward, "workspace": f"workspaces/{task_id}",
             "portal": portal, "needs_jon": needs_jon,
+            "mentions": [{"name": name, "kind": "person"}
+                         for name in re.findall(r"(?:teammate|partner|to|with) ([A-Z][a-z]+)", words)][:6],
         })
     return {"tasks": tasks}
 

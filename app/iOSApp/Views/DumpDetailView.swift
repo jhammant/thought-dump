@@ -71,6 +71,14 @@ struct DumpDetailView: View {
                         let count = dump.tasks.filter { $0.route == route }.count
                         if count > 0 { Chip(text: "\(count)", symbol: route.symbol, color: route.color) }
                     }
+                    let known = Set(dump.tasks.flatMap(\.found).map(\.id)).count
+                    if known > 0 { Chip(text: "\(known)", symbol: "person.crop.circle.badge.checkmark", color: .teal) }
+                }
+                if dump.contextState == "looking" {
+                    Label("Looking up who's mentioned…", systemImage: "person.text.rectangle")
+                        .font(.caption)
+                        .foregroundStyle(.teal)
+                        .symbolEffect(.pulse)
                 }
             }
             Spacer(minLength: 0)

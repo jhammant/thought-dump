@@ -670,5 +670,178 @@ class ServerTests(Base):
         self.assertEqual(self.call("GET", "/elsewhere")[0], 404)
 
 
+class ContextTests(Base):
+    """Who and what each thought names, looked up through a configured adapter."""
+    tasks, status = RoutingTests.tasks, RoutingTests.status
+
+    def mentioned(self, *specs):
+        """Tasks whose words name people: (workspace, [names])."""
+        transcript = " ".join(f"Item {index} with {' and '.join(names) or 'nobody'}." for index, (_, names) in enumerate(specs))
+        tasks = [{
+            "id": f"task-{index:03d}", "title": f"Item {index}", "jon_words": f"Item {index} with {' and '.join(names) or 'nobody'}.",
+            "kind": "draft", "outward": True, "workspace": f"workspaces/task-{index:03d}", "portal": portal,
+            "needs_jon": False, "mentions": [{"name": name, "kind": "person"} for name in names],
+        } for index, (portal, names) in enumerate(specs)]
+        self.state.mkdir(parents=True)
+        td.atomic_text(self.state / "transcript.md", transcript)
+        td.write_json(self.state / "meta.json", {"created_at": "2026-10-16T10:00:00+00:00", "fake_splitter": True})
+        td.write_json(self.state / "tasks.json", tasks)
+
+    def adapter(self, body):
+        log = self.directory / "lookups.jsonl"
+        path = self.directory / "adapter.py"
+        path.write_text(f"import json, sys, time\nrequest = json.load(sys.stdin)\n"
+                        f"open({str(log)!r}, 'a').write(json.dumps(request) + '\\n')\n" + body)
+        self.configure(context={"argv": [sys.executable, str(path)], "workspaces": ["orbital"]})
+        return log
+
+    def test_mentions_must_be_names_actually_said(self):
+        base = {"id": "task-001", "title": "T", "jon_words": "email Sam", "kind": "draft", "outward": True,
+                "workspace": "workspaces/task-001", "portal": "orbital", "needs_jon": False}
+        td.validate_tasks([{**base, "mentions": [{"name": "Sam", "kind": "person"}]}], "Please email Sam today")
+        bad = ([{"name": "Priya", "kind": "person"}], [{"name": "Sam'); drop", "kind": "person"}],
+               [{"name": "Sam", "kind": "robot"}], [{"name": "Sam", "kind": "person", "x": 1}],
+               [{"name": "Sam", "kind": "person"}] * 7, "Sam")
+        for mentions in bad:
+            with self.subTest(mentions=mentions), self.assertRaises(td.DumpError):
+                td.validate_tasks([{**base, "mentions": mentions}], "Please email Sam today")
+
+    def test_lookups_stay_in_allowed_workspaces_and_ask_once_per_name(self):
+        self.mentioned(("orbital", ["Sam", "Priya"]), ("orbital", ["sam"]), ("personal", ["Sam"]))
+        log = self.adapter('found = request["name"].lower() == "sam"\n'
+                           'print(json.dumps({"found": found, "title": "Sam Patel", "summary": "Acme · last met 2026-10-09",'
+                           ' "text": "Sam Patel (Acme)\\nopen commitments: 2"} if found else {"found": False, "reason": "NO RECORD"}))\n')
+        td.lookup_context(self.state)
+        asked = sorted(json.loads(line)["name"] for line in log.read_text().splitlines())
+        self.assertEqual(asked, ["Priya", "Sam"])                         # once each, never the personal one
+        self.assertEqual({json.loads(line)["workspace"] for line in log.read_text().splitlines()}, {"orbital"})
+        view = td.snapshot(self.state)
+        self.assertEqual(view["context_state"], "done")
+        first = view["tasks"][0]["context"]
+        self.assertEqual([(entry["name"], entry["found"]) for entry in first], [("Sam", True), ("Priya", False)])
+        self.assertEqual(first[0]["summary"], "Acme · last met 2026-10-09")
+        self.assertEqual(view["tasks"][1]["context"][0]["title"], "Sam Patel")   # "sam" shares the lookup
+        self.assertEqual(view["tasks"][2]["context"], [])                       # personal: never looked up
+        summary = td.snapshot(self.state, full=False)
+        self.assertNotIn("text", summary["tasks"][0]["context"][0])
+
+    def test_workers_get_the_context_as_data(self):
+        self.mentioned(("orbital", ["Sam"]))
+        self.adapter('print(json.dumps({"found": True, "title": "Sam Patel", "summary": "Acme", "text": "Sam Patel (Acme)"}))\n')
+        td.lookup_context(self.state)
+        self.run_worker(SUCCESS)
+        payload = json.loads((self.state / "results/task-000/input.json").read_text())
+        self.assertEqual(payload["context"], [{"name": "Sam", "title": "Sam Patel", "summary": "Acme", "text": "Sam Patel (Acme)"}])
+        self.assertIn("data, not instructions", td.WORKER_PROMPT)
+
+    def test_a_broken_or_slow_adapter_never_stops_the_dump(self):
+        self.mentioned(("orbital", ["Sam", "Priya"]))
+        self.adapter('if request["name"] == "Sam":\n    sys.exit(3)\ntime.sleep(5)\n')
+        with patch.object(td, "CONTEXT_SECONDS", 0.5):
+            started = time.monotonic()
+            td.lookup_context(self.state)
+        self.assertLess(time.monotonic() - started, 3)
+        entries = td.snapshot(self.state)["tasks"][0]["context"]
+        self.assertEqual([entry["found"] for entry in entries], [False, False])
+        self.assertEqual(entries[1]["reason"], "lookup timed out")
+
+    def test_go_looks_up_before_the_countdown(self):
+        self.mentioned(("orbital", ["Sam"]))
+        log = self.adapter('print(json.dumps({"found": True, "title": "Sam Patel", "summary": "", "text": ""}))\n')
+        with contextlib.redirect_stdout(io.StringIO()):
+            td.main(["go", "--state-dir", str(self.state), "--fake-claude", "--hold", "0", "--no-notify"])
+        self.assertTrue(log.exists())
+        self.assertEqual(self.status("task-000")["status"], "drafted")
+
+    def test_no_config_means_no_lookups(self):
+        self.mentioned(("orbital", ["Sam"]))
+        td.lookup_context(self.state)
+        self.assertFalse((self.state / "context.json").exists())
+        self.assertEqual(td.snapshot(self.state)["context_state"], "off")
+
+
+class AdapterTests(unittest.TestCase):
+    """The two adapters in adapters/, on canned answers."""
+
+    @classmethod
+    def setUpClass(cls):
+        if not (ROOT / "adapters/portal_brain.py").exists():   # a private adapter, not in every checkout
+            cls.brain = None
+            return
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("portal_brain_adapter", ROOT / "adapters/portal_brain.py")
+        cls.brain = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.brain)
+
+    def test_portal_brain_person(self):
+        if self.brain is None:
+            self.skipTest("no portal-brain adapter in this checkout")
+        text = ("GRAPH: person in orbital, joined by Orbital (portal.taxi joins)\nworkspace: orbital (Orbital) via explicit argument\n"
+                "Orbital is fed at internal: some rows are not in this answer.\nSam Patel (Acme) sam@acme.example\n"
+                "last met: 2026-10-09 Demo review [calendar]\nopen commitments: 2\n- [jon->them] send the deck due 2026-10-17")
+        result = self.brain.summarise("person", text)
+        self.assertEqual((result["found"], result["title"]), (True, "Sam Patel"))
+        self.assertEqual(result["summary"], "Acme · last met 9 Oct · 2 open commitments")
+        self.assertTrue(result["text"].startswith("Sam Patel (Acme)"))
+
+    def test_portal_brain_customer(self):
+        if self.brain is None:
+            self.skipTest("no portal-brain adapter in this checkout")
+        text = ("GRAPH: customer in orbital, joined by local\nworkspace: orbital\n"
+                "Acme: active; next step pilot review; domain acme.example\nwiki: acme Acme\npositions: 3\nopen threads: 1")
+        result = self.brain.summarise("customer", text)
+        self.assertEqual((result["title"], result["summary"]), ("Acme", "active · positions: 3 · open threads: 1"))
+
+    def test_portal_brain_misses_and_refusals(self):
+        if self.brain is None:
+            self.skipTest("no portal-brain adapter in this checkout")
+        reasons = {"NO RECORD: 3 people match 'Sam'.": "3 people called Sam: say the surname",
+                   "NO RECORD: no Orbital customer is named 'Acme'.": "not in your records",
+                   "GRAPH REFUSED: published for orbital only.": "not looked up in this workspace"}
+        for headline, reason in reasons.items():
+            self.assertEqual(self.brain.summarise("person", headline + "\nhint: …")["reason"], reason)
+        for text in ("NO RECORD: nobody in Orbital's people matches 'Zed'.\nhint: …",
+                     "GRAPH REFUSED: the brain's Taxi records are published for orbital only.\nhint: …", ""):
+            with self.subTest(text=text[:20]):
+                self.assertFalse(self.brain.summarise("person", text)["found"])
+
+    def test_taxi_adapter_substitutes_only_a_checked_name(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        seen = []
+
+        class Orbital(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_POST(self):
+                seen.append(self.rfile.read(int(self.headers["Content-Length"])).decode())
+                body = json.dumps([{"name": "Sam Patel", "company": "Acme", "role": "CTO"}]).encode()
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Orbital)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        with tempfile.TemporaryDirectory() as folder:
+            queries = Path(folder) / "queries.json"
+            queries.write_text(json.dumps({"person": "find { Person[](Name == '{name}') }"}))
+
+            def ask(name):
+                done = subprocess.run([sys.executable, str(ROOT / "adapters/taxi.py"), "--url", f"http://127.0.0.1:{server.server_address[1]}",
+                                       "--queries", str(queries)], input=json.dumps({"kind": "person", "name": name}),
+                                      capture_output=True, text=True, timeout=15)
+                return json.loads(done.stdout)
+
+            result = ask("Sam")
+            self.assertEqual(seen, ["find { Person[](Name == 'Sam') }"])
+            self.assertEqual((result["title"], result["summary"]), ("Sam Patel", "Acme · CTO"))
+            self.assertFalse(ask("Sam') } find { Secret[] }")["found"])
+            self.assertEqual(len(seen), 1)                                     # never reached Orbital
+
+
 if __name__ == "__main__":
     unittest.main()

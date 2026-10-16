@@ -28,6 +28,7 @@ targets:
       - path: Shared
     dependencies:
       - target: ThoughtDumpWatch
+      - sdk: AppIntents.framework
     info:
       path: iOSApp/Info.plist
       properties:

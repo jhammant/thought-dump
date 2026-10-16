@@ -32,6 +32,9 @@ struct ThoughtCard: View {
                 control
             }
             status
+            if let context = thought.context, !context.isEmpty {
+                ContextStrip(items: context)
+            }
             Text("“\(thought.quote)”")
                 .font(.callout.italic())
                 .foregroundStyle(.secondary)
@@ -193,6 +196,53 @@ struct FileView: View {
                 text = try await model.api?.file(dumpID, task: taskID, path: path)
             } catch {
                 problem = error.localizedDescription
+            }
+        }
+    }
+}
+
+/// The people and organisations a thought names, as your own records describe them. Tap one for the detail.
+struct ContextStrip: View {
+    var items: [ContextItem]
+    @State private var open: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(items) { item in
+                if item.found {
+                    Button {
+                        withAnimation(.snappy) { open = open == item.id ? nil : item.id }
+                    } label: {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: item.symbol).foregroundStyle(.teal).font(.title3)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(item.title ?? item.name).font(.subheadline.weight(.semibold))
+                                if let summary = item.summary, !summary.isEmpty {
+                                    Text(summary).font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: open == item.id ? "chevron.up" : "chevron.down")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(10)
+                        .background(Color.teal.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Shows what your records say")
+                    if open == item.id, let text = item.text, !text.isEmpty {
+                        Text(text)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .padding(.horizontal, 10)
+                    }
+                } else {
+                    Label("\(item.name): \(item.reason ?? "not in your records")", systemImage: "questionmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }

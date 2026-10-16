@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0731BDEA86DC9ED6CD1A9D34 /* DumpDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45C638BCE4C37A2486486FEB /* DumpDetailView.swift */; };
 		0EE081A896E1D25EA81D55AF /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E42AB480965E96B6D1D1ACD /* API.swift */; };
+		1516675AD8C818CC68F00FF8 /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 379BF7A0DC157978FC2F1DE6 /* AppIntents.framework */; };
 		159DFDDE0BD6838978DF879E /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08095608248BA67D8A35B54A /* AppModel.swift */; };
 		22AB891D5533ECBAB9F58D95 /* DumpListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79E46BCA57A1D904BBFBEE8A /* DumpListView.swift */; };
 		2A3FC20ECBCA8A546E9067D3 /* WatchLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAD6991F7F2AE7C5CF8E8824 /* WatchLink.swift */; };
@@ -59,6 +60,7 @@
 /* Begin PBXFileReference section */
 		08095608248BA67D8A35B54A /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		22E3C630ACD92938C256D0C7 /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intents.swift; sourceTree = "<group>"; };
+		379BF7A0DC157978FC2F1DE6 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		42EAA0F734BD14A583FF7470 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		45C638BCE4C37A2486486FEB /* DumpDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DumpDetailView.swift; sourceTree = "<group>"; };
 		51BDACF96C0FD7187E23FA55 /* ThoughtDumpWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ThoughtDumpWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -82,6 +84,17 @@
 		E8F00AA8B8E4384FB895B073 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FAD6991F7F2AE7C5CF8E8824 /* WatchLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchLink.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C23C3FBCB327A9FE0C643BFE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1516675AD8C818CC68F00FF8 /* AppIntents.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		29A0D11043809EC91D73AB75 /* Views */ = {
@@ -133,6 +146,14 @@
 			path = iOSApp;
 			sourceTree = "<group>";
 		};
+		BF247FE3F0CF304D629AFBAB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				379BF7A0DC157978FC2F1DE6 /* AppIntents.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		D668C0ADC5EF887AE5F30895 /* WatchApp */ = {
 			isa = PBXGroup;
 			children = (
@@ -150,6 +171,7 @@
 				9CE6AEE45A76620C2EDEA7AA /* iOSApp */,
 				80137E4C46CF4B98AD70A04A /* Shared */,
 				D668C0ADC5EF887AE5F30895 /* WatchApp */,
+				BF247FE3F0CF304D629AFBAB /* Frameworks */,
 				6B7ADCF39E34449441D469D1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -163,6 +185,7 @@
 			buildPhases = (
 				044C9AFE0CEE8E6047687827 /* Sources */,
 				7FDCF79F33AD0EF44AF55A8C /* Resources */,
+				C23C3FBCB327A9FE0C643BFE /* Frameworks */,
 				01A439B66B7841D29879FAAF /* Embed Watch Content */,
 			);
 			buildRules = (

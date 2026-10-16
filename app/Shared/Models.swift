@@ -14,6 +14,7 @@ struct Dump: Codable, Identifiable, Hashable {
     var text: String
     var tasks: [Thought]
     var client: Client?
+    var contextState: String?
 
     struct Client: Codable, Hashable {
         var device: String?
@@ -68,8 +69,10 @@ struct Thought: Codable, Identifiable, Hashable {
     var todoId: String?
     var output: String?
     var files: [String]?
+    var context: [ContextItem]?
 
     var started: Date? { startedAt.flatMap(Dump.date) }
+    var found: [ContextItem] { (context ?? []).filter(\.found) }
 
     var bucket: Bucket {
         switch status {
@@ -79,6 +82,20 @@ struct Thought: Codable, Identifiable, Hashable {
         default: return .waiting
         }
     }
+}
+
+/// A person or organisation a thought names, as the owner's own records describe them.
+struct ContextItem: Codable, Hashable, Identifiable {
+    var name: String
+    var kind: String
+    var found: Bool
+    var title: String?
+    var summary: String?
+    var text: String?
+    var reason: String?
+
+    var id: String { kind + "|" + name.lowercased() }
+    var symbol: String { kind == "person" ? "person.crop.circle.fill" : "building.2.fill" }
 }
 
 enum Route: String, Codable, Hashable, CaseIterable {

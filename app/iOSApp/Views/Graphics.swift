@@ -157,6 +157,11 @@ struct ThoughtNode: View {
                 HStack(spacing: 4) {
                     Image(systemName: thought.status.symbol)
                     Text(thought.status == .pending ? thought.route.label : thought.status.label)
+                    if let match = thought.found.first {
+                        Text("· \(match.title ?? match.name)")
+                            .foregroundStyle(.teal)
+                            .lineLimit(1)
+                    }
                 }
                 .font(.caption2)
                 .foregroundStyle(thought.status.color)
