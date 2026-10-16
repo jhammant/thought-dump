@@ -1,0 +1,96 @@
+name: ThoughtDump
+options:
+  bundleIdPrefix: io.hammant
+  deploymentTarget:
+    iOS: "26.0"
+    watchOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: 9HPLKKTW4L
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    GENERATE_INFOPLIST_FILE: NO
+
+targets:
+  # iPhone and iPad: record a thought dump, send it to the Mac, and watch what
+  # it found and how each thought is being handled.
+  ThoughtDump:
+    type: application
+    platform: iOS
+    sources:
+      - path: iOSApp
+      - path: Shared
+    dependencies:
+      - target: ThoughtDumpWatch
+    info:
+      path: iOSApp/Info.plist
+      properties:
+        CFBundleDisplayName: Thought Dump
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSMicrophoneUsageDescription: Thought Dump listens while you talk so it can turn what you say into text, on this device.
+        NSSpeechRecognitionUsageDescription: Thought Dump transcribes your voice note on this device before sending the text to your Mac.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        CFBundleURLTypes:
+          - CFBundleURLName: io.hammant.thoughtdump
+            CFBundleURLSchemes:
+              - thoughtdump
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.hammant.thoughtdump
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: Apple Distribution
+          PROVISIONING_PROFILE_SPECIFIER: Thought Dump AppStore
+
+  # Apple Watch: dictate a thought dump; the iPhone sends it and reports back.
+  ThoughtDumpWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: WatchApp
+      - path: Shared
+    info:
+      path: WatchApp/Info.plist
+      properties:
+        CFBundleDisplayName: Thought Dump
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: io.hammant.thoughtdump
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.hammant.thoughtdump.watchkitapp
+        TARGETED_DEVICE_FAMILY: "4"
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: Apple Distribution
+          PROVISIONING_PROFILE_SPECIFIER: Thought Dump Watch AppStore

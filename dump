@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+"""Repository-local entry point; optionally add this directory to PATH."""
+from thought_dump import main
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+

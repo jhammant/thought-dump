@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.thought-dump/
+.demo/
+.test-*/
+.DS_Store
+.project-map/
+
+app/build/
+xcuserdata/
+*.xcuserstate
