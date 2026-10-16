@@ -206,9 +206,11 @@
 				TargetAttributes = {
 					0A5249BCDCEA2775C2A79AC4 = {
 						DevelopmentTeam = 9HPLKKTW4L;
+						ProvisioningStyle = Automatic;
 					};
 					BD80C7F6D55C840E74D197EB = {
 						DevelopmentTeam = 9HPLKKTW4L;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -384,11 +386,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_IDENTITY = "Apple Distribution";
-				CODE_SIGN_STYLE = Manual;
 				INFOPLIST_FILE = WatchApp/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = io.hammant.thoughtdump.watchkitapp;
-				PROVISIONING_PROFILE_SPECIFIER = "Thought Dump Watch AppStore";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -400,15 +399,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_IDENTITY = "Apple Distribution";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = iOSApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = io.hammant.thoughtdump;
-				PROVISIONING_PROFILE_SPECIFIER = "Thought Dump AppStore";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
